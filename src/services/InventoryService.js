@@ -1,14 +1,29 @@
 const InventoryRepository = require('../repositories/InventoryRepository');
 const ReservationRepository = require('../repositories/ReservationRepository');
+const CacheService = require('./CacheService');
 const { RESERVATION_CONFIG, ERROR_MESSAGES } = require('../config/constants');
 const logger = require('../utils/logger');
 
+const INVENTORY_CACHE_TTL = 60; // 1 minute cache for inventory
+
 class InventoryService {
   /**
-   * Get inventory by SKU
+   * Get inventory by SKU (with caching)
    */
   async getInventoryBySku(sku) {
     try {
+      const cacheKey = `inventory:${sku.toUpperCase()}`;
+
+      // Try to get from cache first
+      const cachedInventory = await CacheService.get(cacheKey);
+      if (cachedInventory) {
+        logger.debug('Inventory retrieved from cache', { sku });
+        return {
+          success: true,
+          data: cachedInventory,
+        };
+      }
+
       const inventory = await InventoryRepository.getBySkU(sku);
       if (!inventory) {
         return {
@@ -17,6 +32,10 @@ class InventoryService {
           data: null,
         };
       }
+
+      // Cache the result
+      await CacheService.set(cacheKey, inventory.toObject(), INVENTORY_CACHE_TTL);
+
       return {
         success: true,
         data: inventory,
@@ -65,6 +84,9 @@ class InventoryService {
         reservedQuantity: 0,
         price,
       });
+
+      // Invalidate cache
+      await CacheService.delete(`inventory:${sku.toUpperCase()}`);
 
       logger.info('Inventory created', { sku, quantity });
       return {

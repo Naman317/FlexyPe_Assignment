@@ -38,8 +38,5 @@ const inventorySchema = new mongoose.Schema(
     timestamps: true,
   }
 );
-//  fast lookups
-
-inventorySchema.index({ sku: 1 });
 
 module.exports = mongoose.model('Inventory', inventorySchema);

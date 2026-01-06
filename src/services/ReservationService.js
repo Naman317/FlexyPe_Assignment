@@ -170,20 +170,18 @@ class ReservationService {
     }
   }
 
-  /**
-   * Cleanup expired reservations
-   */
+  //Clean expiry rservations
   async cleanupExpiredReservations() {
     try {
-      const expiredReservations = await ReservationRepository.getAll();
+      const now = new Date();
+      
+      // Find all expired reservations with RESERVED status
+      const expiredReservations = await ReservationRepository.getExpired(now);
       let cleaned = 0;
 
       for (const reservation of expiredReservations) {
-        if (
-          reservation.status === 'RESERVED' &&
-          new Date() > reservation.expiresAt
-        ) {
-          // Free up inventory
+        // Free up inventory
+        try {
           await InventoryRepository.decreaseReserved(
             reservation.sku,
             reservation.quantity
@@ -191,6 +189,17 @@ class ReservationService {
           // Mark as expired
           await ReservationRepository.updateStatus(reservation.reservationId, 'EXPIRED');
           cleaned++;
+          
+          logger.debug('Expired reservation cleaned', {
+            reservationId: reservation.reservationId,
+            sku: reservation.sku,
+            quantity: reservation.quantity,
+          });
+        } catch (error) {
+          logger.error('Error cleaning up single reservation', {
+            reservationId: reservation.reservationId,
+            error: error.message,
+          });
         }
       }
 
