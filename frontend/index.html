@@ -1,0 +1,900 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>FlexyPe - Smart Inventory Reservation</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+            padding: 20px;
+        }
+
+        .container {
+            max-width: 1400px;
+            margin: 0 auto;
+        }
+
+        header {
+            text-align: center;
+            color: white;
+            margin-bottom: 50px;
+            padding: 40px 20px;
+            background: rgba(0, 0, 0, 0.1);
+            border-radius: 15px;
+            backdrop-filter: blur(10px);
+        }
+
+        header h1 {
+            font-size: 3.5em;
+            margin-bottom: 15px;
+            font-weight: 800;
+            text-shadow: 2px 2px 4px rgba(0, 0, 0, 0.2);
+            letter-spacing: -1px;
+        }
+
+        header p {
+            font-size: 1.3em;
+            opacity: 0.95;
+            font-weight: 300;
+            margin-bottom: 15px;
+        }
+
+        .header-subtitle {
+            font-size: 0.95em;
+            opacity: 0.85;
+            font-weight: 400;
+            max-width: 600px;
+            margin: 0 auto;
+        }
+
+        .products-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(320px, 1fr));
+            gap: 30px;
+            margin-bottom: 50px;
+        }
+
+        .product-card {
+            background: white;
+            border-radius: 16px;
+            overflow: hidden;
+            box-shadow: 0 20px 60px rgba(0, 0, 0, 0.15);
+            transition: all 0.4s cubic-bezier(0.23, 1, 0.320, 1);
+            display: flex;
+            flex-direction: column;
+            position: relative;
+        }
+
+        .product-card::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 0;
+            right: 0;
+            height: 4px;
+            background: linear-gradient(90deg, #667eea, #764ba2);
+            transform: scaleX(0);
+            transform-origin: left;
+            transition: transform 0.4s ease;
+            z-index: 10;
+        }
+
+        .product-card:hover {
+            transform: translateY(-12px);
+            box-shadow: 0 30px 80px rgba(0, 0, 0, 0.25);
+        }
+
+        .product-card:hover::before {
+            transform: scaleX(1);
+        }
+
+        .product-image {
+            width: 100%;
+            height: 200px;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            color: white;
+            font-size: 4em;
+            position: relative;
+            overflow: hidden;
+        }
+
+        .product-image::after {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background: radial-gradient(circle at 20% 50%, rgba(255,255,255,0.1), transparent);
+        }
+
+        .product-info {
+            padding: 25px;
+            flex-grow: 1;
+            display: flex;
+            flex-direction: column;
+        }
+
+        .product-name {
+            font-size: 1.4em;
+            font-weight: 700;
+            margin-bottom: 8px;
+            color: #1a1a1a;
+        }
+
+        .product-sku {
+            color: #999;
+            font-size: 0.85em;
+            margin-bottom: 15px;
+            font-weight: 500;
+        }
+
+        .product-price {
+            font-size: 1.8em;
+            font-weight: 800;
+            background: linear-gradient(135deg, #667eea, #764ba2);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            background-clip: text;
+            margin-bottom: 15px;
+        }
+
+        .inventory-status {
+            padding: 12px 15px;
+            border-radius: 8px;
+            margin-bottom: 18px;
+            font-size: 0.95em;
+            font-weight: 600;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+
+        .inventory-status.in-stock {
+            background-color: #e8f5e9;
+            color: #2e7d32;
+            border: 1.5px solid #81c784;
+        }
+
+        .inventory-status.low-stock {
+            background-color: #fff8e1;
+            color: #f57f17;
+            border: 1.5px solid #fdd835;
+        }
+
+        .inventory-status.out-of-stock {
+            background-color: #ffebee;
+            color: #c62828;
+            border: 1.5px solid #ef5350;
+        }
+
+        .quantity-selector {
+            margin-bottom: 18px;
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            background: #f5f5f5;
+            padding: 10px 12px;
+            border-radius: 8px;
+        }
+
+        .quantity-selector label {
+            font-weight: 600;
+            color: #333;
+            font-size: 0.95em;
+        }
+
+        .quantity-selector input {
+            width: 70px;
+            padding: 8px 10px;
+            border: 2px solid #e0e0e0;
+            border-radius: 6px;
+            text-align: center;
+            font-weight: 600;
+            transition: border-color 0.3s;
+        }
+
+        .quantity-selector input:focus {
+            outline: none;
+            border-color: #667eea;
+        }
+
+        .action-buttons {
+            display: flex;
+            gap: 12px;
+            margin-top: auto;
+        }
+
+        button {
+            flex: 1;
+            padding: 14px;
+            border: none;
+            border-radius: 8px;
+            font-size: 1em;
+            font-weight: 700;
+            cursor: pointer;
+            transition: all 0.3s cubic-bezier(0.23, 1, 0.320, 1);
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+        }
+
+        .btn-reserve {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            box-shadow: 0 8px 24px rgba(102, 126, 234, 0.4);
+        }
+
+        .btn-reserve:hover:not(:disabled) {
+            transform: translateY(-3px);
+            box-shadow: 0 12px 32px rgba(102, 126, 234, 0.6);
+        }
+
+        .btn-reserve:active:not(:disabled) {
+            transform: translateY(-1px);
+        }
+
+        .btn-reserve:disabled {
+            background: #ccc;
+            cursor: not-allowed;
+            box-shadow: none;
+            opacity: 0.6;
+        }
+
+        .btn-cancel {
+            background-color: #f5f5f5;
+            color: #333;
+            border: 2px solid #ddd;
+            font-weight: 700;
+            transition: all 0.3s ease;
+        }
+
+        .btn-cancel:hover:not(:disabled) {
+            background-color: #e0e0e0;
+            border-color: #999;
+            transform: translateY(-2px);
+        }
+
+        .btn-confirm {
+            background: linear-gradient(135deg, #28a745 0%, #20c997 100%);
+            color: white;
+            box-shadow: 0 8px 24px rgba(40, 167, 69, 0.4);
+        }
+
+        .btn-confirm:hover:not(:disabled) {
+            transform: translateY(-3px);
+            box-shadow: 0 12px 32px rgba(40, 167, 69, 0.6);
+        }
+
+        .btn-confirm:active:not(:disabled) {
+            transform: translateY(-1px);
+        }
+
+        .reservation-info {
+            margin-top: 15px;
+            padding: 16px;
+            background-color: #e7f3ff;
+            border: 2px solid #90caf9;
+            border-radius: 10px;
+            font-size: 0.9em;
+            color: #004085;
+            animation: slideInUp 0.4s ease;
+        }
+
+        .reservation-info.success {
+            background-color: #e8f5e9;
+            border-color: #81c784;
+            color: #2e7d32;
+        }
+
+        .reservation-info.error {
+            background-color: #ffebee;
+            border-color: #ef5350;
+            color: #c62828;
+        }
+
+        .countdown {
+            font-weight: 800;
+            color: #d32f2f;
+            display: inline-block;
+            background: rgba(211, 47, 47, 0.1);
+            padding: 4px 8px;
+            border-radius: 4px;
+            margin-top: 8px;
+        }
+
+        .modal {
+            display: none;
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(0, 0, 0, 0.6);
+            z-index: 1000;
+            align-items: center;
+            justify-content: center;
+            backdrop-filter: blur(4px);
+            animation: fadeIn 0.3s ease;
+        }
+
+        .modal.active {
+            display: flex;
+        }
+
+        .modal-content {
+            background: white;
+            padding: 40px;
+            border-radius: 16px;
+            max-width: 450px;
+            width: 90%;
+            box-shadow: 0 25px 60px rgba(0, 0, 0, 0.3);
+            animation: slideInDown 0.4s cubic-bezier(0.23, 1, 0.320, 1);
+        }
+
+        .modal-header {
+            font-size: 1.8em;
+            font-weight: 800;
+            margin-bottom: 25px;
+            background: linear-gradient(135deg, #667eea, #764ba2);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            background-clip: text;
+        }
+
+        .modal-body {
+            margin-bottom: 25px;
+            color: #555;
+            line-height: 1.6;
+        }
+
+        .modal-body > div {
+            background: #f9f9f9;
+            padding: 16px;
+            border-radius: 10px;
+            margin-bottom: 12px;
+            font-size: 0.95em;
+        }
+
+        .modal-body strong {
+            color: #333;
+            display: block;
+            margin-bottom: 4px;
+        }
+
+        .modal-body p {
+            margin: 8px 0;
+        }
+
+        .modal-footer {
+            display: flex;
+            gap: 12px;
+            margin-top: 0;
+        }
+
+        .modal-footer button {
+            flex: 1;
+        }
+
+        .loader {
+            display: inline-block;
+            width: 24px;
+            height: 24px;
+            border: 3px solid #f3f3f3;
+            border-top: 3px solid #667eea;
+            border-radius: 50%;
+            animation: spin 0.8s linear infinite;
+            margin-right: 10px;
+            vertical-align: middle;
+        }
+
+        @keyframes spin {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+        }
+
+        @keyframes slideIn {
+            from {
+                transform: translateX(400px);
+                opacity: 0;
+            }
+            to {
+                transform: translateX(0);
+                opacity: 1;
+            }
+        }
+
+        @keyframes slideOut {
+            from {
+                transform: translateX(0);
+                opacity: 1;
+            }
+            to {
+                transform: translateX(400px);
+                opacity: 0;
+            }
+        }
+
+        @keyframes slideInUp {
+            from {
+                transform: translateY(20px);
+                opacity: 0;
+            }
+            to {
+                transform: translateY(0);
+                opacity: 1;
+            }
+        }
+
+        @keyframes slideInDown {
+            from {
+                transform: translateY(-20px);
+                opacity: 0;
+            }
+            to {
+                transform: translateY(0);
+                opacity: 1;
+            }
+        }
+
+        @keyframes fadeIn {
+            from {
+                opacity: 0;
+            }
+            to {
+                opacity: 1;
+            }
+        }
+
+        .toast-container {
+            position: fixed;
+            top: 25px;
+            right: 25px;
+            z-index: 2000;
+        }
+
+        .toast {
+            background: white;
+            padding: 18px 24px;
+            border-radius: 12px;
+            margin-bottom: 15px;
+            box-shadow: 0 12px 40px rgba(0, 0, 0, 0.15);
+            animation: slideIn 0.4s cubic-bezier(0.34, 1.56, 0.64, 1);
+            min-width: 300px;
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            font-weight: 600;
+            border-left: 5px solid;
+        }
+
+        .toast.success {
+            border-left-color: #28a745;
+            color: #155724;
+            background: linear-gradient(135deg, #f0fdf4, #ffffff);
+        }
+
+        .toast.error {
+            border-left-color: #dc3545;
+            color: #721c24;
+            background: linear-gradient(135deg, #fef2f2, #ffffff);
+        }
+
+        .toast.info {
+            border-left-color: #667eea;
+            color: #004085;
+            background: linear-gradient(135deg, #f0f4ff, #ffffff);
+        }
+
+        .toast::before {
+            content: '';
+            display: inline-block;
+            width: 20px;
+            height: 20px;
+            border-radius: 50%;
+            flex-shrink: 0;
+        }
+
+        .toast.success::before {
+            background: #28a745;
+            color: white;
+        }
+
+        .toast.error::before {
+            background: #dc3545;
+            color: white;
+        }
+
+        .toast.info::before {
+            background: #667eea;
+            color: white;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <header>
+            <h1>🛍️ FlexyPe</h1>
+            <p>Smart Inventory Reservation System</p>
+            <p class="header-subtitle">Real-time inventory management with smart reservations. No overselling, no waiting.</p>
+        </header>
+
+        <div class="products-grid" id="productsContainer">
+            <!-- Products will be loaded here -->
+            <div style="text-align: center; grid-column: 1/-1; padding: 40px; color: white;">
+                <div class="loader"></div>
+                <p>Loading products...</p>
+            </div>
+        </div>
+    </div>
+
+    <!-- Checkout Modal -->
+    <div class="modal" id="checkoutModal">
+        <div class="modal-content">
+            <div class="modal-header">Complete Your Purchase</div>
+            <div class="modal-body" id="checkoutDetails"></div>
+            <div class="modal-footer">
+                <button class="btn-confirm" id="confirmCheckoutBtn" onclick="confirmCheckout()">Confirm</button>
+                <button class="btn-cancel" onclick="closeCheckoutModal()">Cancel</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Toast Notifications -->
+    <div class="toast-container" id="toastContainer"></div>
+
+    <script>
+        const API_BASE_URL = 'http://localhost:3000';
+        let currentUser = generateUserId();
+        let reservations = new Map();
+        let orders = new Map();
+
+        function generateUserId() {
+            return 'user-' + Math.random().toString(36).substr(2, 9);
+        }
+
+        async function loadProducts() {
+            try {
+                const response = await fetch(`${API_BASE_URL}/inventory`);
+                const data = await response.json();
+
+                if (data.success) {
+                    renderProducts(data.data);
+                } else {
+                    showToast('Failed to load products', 'error');
+                }
+            } catch (error) {
+                console.error('Error loading products:', error);
+                showToast('Error connecting to server. Make sure the backend is running on port 3000.', 'error');
+            }
+        }
+
+        function renderProducts(products) {
+            const container = document.getElementById('productsContainer');
+            container.innerHTML = '';
+
+            if (products.length === 0) {
+                container.innerHTML = '<p style="grid-column: 1/-1; color: white; text-align: center; padding: 40px;">No products available</p>';
+                return;
+            }
+
+            products.forEach(product => {
+                const card = createProductCard(product);
+                container.appendChild(card);
+            });
+        }
+
+        function createProductCard(product) {
+            const card = document.createElement('div');
+            card.className = 'product-card';
+
+            const emoji = getProductEmoji(product.productName);
+            const isInStock = product.availableQuantity > 0;
+            const isLowStock = product.availableQuantity > 0 && product.availableQuantity <= 3;
+
+            let statusClass = 'out-of-stock';
+            let statusText = 'Out of Stock';
+
+            if (isInStock) {
+                statusClass = isLowStock ? 'low-stock' : 'in-stock';
+                statusText = isLowStock 
+                    ? `⚠️ Only ${product.availableQuantity} left!` 
+                    : `✓ ${product.availableQuantity} in stock`;
+            }
+
+            const reservation = reservations.get(product.sku);
+            let reservationHTML = '';
+            if (reservation) {
+                const timeLeft = Math.max(0, Math.ceil((new Date(reservation.expiresAt) - new Date()) / 1000));
+                const timeFormatted = formatTimeRemaining(timeLeft);
+                reservationHTML = `
+                    <div class="reservation-info success">
+                        ✓ Reserved for ${reservation.quantity} item(s)
+                        <div class="countdown">Expires in: ${timeFormatted}</div>
+                        <div style="margin-top: 10px;">
+                            <button class="btn-cancel" style="margin-bottom: 5px;" onclick="proceedToCheckout('${product.sku}')">
+                                Proceed to Checkout
+                            </button>
+                            <button class="btn-cancel" onclick="cancelReservation('${reservation.reservationId}')">
+                                Release Reservation
+                            </button>
+                        </div>
+                    </div>
+                `;
+            }
+
+            card.innerHTML = `
+                <div class="product-image">${emoji}</div>
+                <div class="product-info">
+                    <div class="product-name">${product.productName}</div>
+                    <div class="product-sku">SKU: ${product.sku}</div>
+                    <div class="product-price">$${product.price.toFixed(2)}</div>
+                    <div class="inventory-status ${statusClass}">${statusText}</div>
+                    ${reservationHTML}
+                    ${!reservation ? `
+                        <div class="quantity-selector">
+                            <label for="qty-${product.sku}">Quantity:</label>
+                            <input type="number" id="qty-${product.sku}" value="1" min="1" max="${product.availableQuantity || 1}">
+                        </div>
+                        <div class="action-buttons">
+                            <button class="btn-reserve" ${!isInStock ? 'disabled' : ''} onclick="reserve('${product.sku}', '${product.productName}', ${product.price})">
+                                Reserve Now
+                            </button>
+                        </div>
+                    ` : ''}
+                </div>
+            `;
+
+            return card;
+        }
+
+        function getProductEmoji(productName) {
+            const emojis = {
+                'Laptop': '💻',
+                'Phone': '📱',
+                'Tablet': '📱',
+                'Headphones': '🎧',
+                'Smart Watch': '⌚',
+                'Camera': '📷',
+                'Speaker': '🔊',
+                'Monitor': '🖥️'
+            };
+            return emojis[productName] || '📦';
+        }
+
+        async function reserve(sku, productName, price) {
+            const quantityInput = document.getElementById(`qty-${sku}`);
+            const quantity = parseInt(quantityInput.value);
+
+            if (quantity <= 0) {
+                showToast('Please select a valid quantity', 'error');
+                return;
+            }
+
+            try {
+                const response = await fetch(`${API_BASE_URL}/inventory/reserve`, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({
+                        userId: currentUser,
+                        sku: sku,
+                        quantity: quantity
+                    })
+                });
+
+                const data = await response.json();
+
+                if (data.success) {
+                    reservations.set(sku, {
+                        reservationId: data.data.reservationId,
+                        quantity: quantity,
+                        expiresAt: new Date(Date.now() + data.data.expiresIn),
+                        productName: productName,
+                        price: price,
+                        sku: sku
+                    });
+
+                    showToast(`✓ Reserved ${quantity} ${productName}(s) for 5 minutes!`, 'success');
+                    loadProducts();
+
+                    // Start countdown timer
+                    startReservationCountdown(sku);
+                } else {
+                    showToast(`Failed to reserve: ${data.message || 'Unknown error'}`, 'error');
+                }
+            } catch (error) {
+                console.error('Error reserving:', error);
+                showToast('Error reserving product', 'error');
+            }
+        }
+
+        async function cancelReservation(reservationId) {
+            try {
+                const response = await fetch(`${API_BASE_URL}/inventory/reserve/cancel`, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ reservationId: reservationId })
+                });
+
+                const data = await response.json();
+
+                if (data.success) {
+                    for (let [sku, reservation] of reservations.entries()) {
+                        if (reservation.reservationId === reservationId) {
+                            reservations.delete(sku);
+                            break;
+                        }
+                    }
+                    showToast('Reservation cancelled', 'info');
+                    loadProducts();
+                } else {
+                    showToast('Failed to cancel reservation', 'error');
+                }
+            } catch (error) {
+                console.error('Error cancelling:', error);
+                showToast('Error cancelling reservation', 'error');
+            }
+        }
+
+        async function proceedToCheckout(sku) {
+            const reservation = reservations.get(sku);
+            if (!reservation) {
+                showToast('Reservation not found', 'error');
+                return;
+            }
+
+            try {
+                // Create order
+                const orderResponse = await fetch(`${API_BASE_URL}/checkout/create`, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({
+                        userId: currentUser,
+                        reservationId: reservation.reservationId
+                    })
+                });
+
+                const orderData = await orderResponse.json();
+
+                if (orderData.success) {
+                    const order = orderData.data;
+                    orders.set(order.orderId, {
+                        orderId: order.orderId,
+                        reservationId: reservation.reservationId,
+                        sku: sku
+                    });
+
+                    // Show checkout modal
+                    showCheckoutModal(order, reservation);
+                } else {
+                    showToast(`Order failed: ${orderData.message}`, 'error');
+                }
+            } catch (error) {
+                console.error('Error creating order:', error);
+                showToast('Error creating order', 'error');
+            }
+        }
+
+        function showCheckoutModal(order, reservation) {
+            const details = document.getElementById('checkoutDetails');
+            const totalPrice = order.totalPrice.toFixed(2);
+
+            details.innerHTML = `
+                <div style="background: #f8f9fa; padding: 15px; border-radius: 6px; margin-bottom: 15px;">
+                    <p><strong>Product:</strong> ${reservation.productName}</p>
+                    <p><strong>Quantity:</strong> ${reservation.quantity}</p>
+                    <p><strong>Unit Price:</strong> $${reservation.price.toFixed(2)}</p>
+                    <p style="border-top: 1px solid #ddd; padding-top: 10px; margin-top: 10px;">
+                        <strong style="font-size: 1.2em;">Total: $${totalPrice}</strong>
+                    </p>
+                </div>
+                <div style="color: #666; font-size: 0.9em;">
+                    Click "Confirm" to complete your purchase. Your reservation expires in 5 minutes.
+                </div>
+            `;
+
+            document.getElementById('confirmCheckoutBtn').onclick = () => confirmCheckout(order.orderId, reservation.reservationId);
+            document.getElementById('checkoutModal').classList.add('active');
+        }
+
+        async function confirmCheckout(orderId, reservationId) {
+            try {
+                const response = await fetch(`${API_BASE_URL}/checkout/confirm`, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({
+                        userId: currentUser,
+                        orderId: orderId,
+                        reservationId: reservationId
+                    })
+                });
+
+                const data = await response.json();
+
+                if (data.success) {
+                    showToast('✓ Purchase completed successfully!', 'success');
+                    closeCheckoutModal();
+                    
+                    // Clean up
+                    for (let [sku, reservation] of reservations.entries()) {
+                        if (reservation.reservationId === reservationId) {
+                            reservations.delete(sku);
+                            break;
+                        }
+                    }
+
+                    loadProducts();
+                } else {
+                    showToast(`Checkout failed: ${data.message}`, 'error');
+                }
+            } catch (error) {
+                console.error('Error confirming checkout:', error);
+                showToast('Error confirming checkout', 'error');
+            }
+        }
+
+        function closeCheckoutModal() {
+            document.getElementById('checkoutModal').classList.remove('active');
+        }
+
+        function formatTimeRemaining(totalSeconds) {
+            const minutes = Math.floor(totalSeconds / 60);
+            const seconds = totalSeconds % 60;
+            if (minutes > 0) {
+                return `${minutes}min ${seconds}sec`;
+            }
+            return `${seconds}sec`;
+        }
+
+        function startReservationCountdown(sku) {
+            const interval = setInterval(() => {
+                const reservation = reservations.get(sku);
+                if (!reservation) {
+                    clearInterval(interval);
+                    return;
+                }
+
+                const timeLeft = Math.max(0, Math.ceil((new Date(reservation.expiresAt) - new Date()) / 1000));
+                
+                if (timeLeft <= 0) {
+                    reservations.delete(sku);
+                    showToast(`Reservation for ${reservation.productName} has expired`, 'info');
+                    loadProducts();
+                    clearInterval(interval);
+                } else {
+                    loadProducts(); // Refresh to update countdown
+                }
+            }, 1000);
+        }
+
+        function showToast(message, type = 'info') {
+            const container = document.getElementById('toastContainer');
+            const toast = document.createElement('div');
+            toast.className = `toast ${type}`;
+            toast.textContent = message;
+            container.appendChild(toast);
+
+            setTimeout(() => {
+                toast.remove();
+            }, 4000);
+        }
+
+        // Load products on page load
+        window.addEventListener('load', loadProducts);
+
+        // Refresh products every 30 seconds to keep inventory updated
+        setInterval(loadProducts, 30000);
+    </script>
+</body>
+</html>

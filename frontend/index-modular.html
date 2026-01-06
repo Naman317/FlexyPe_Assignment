@@ -1,0 +1,52 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>FlexyPe - Smart Inventory Reservation</title>
+    <link rel="stylesheet" href="css/styles.css">
+</head>
+<body>
+    <div class="container">
+        <header>
+            <h1>🛍️ FlexyPe</h1>
+            <p>Smart Inventory Reservation System</p>
+            <p class="header-subtitle">Real-time inventory management with smart reservations. No overselling, no waiting.</p>
+        </header>
+
+        <div class="products-grid" id="productsContainer">
+            <!-- Products will be loaded here -->
+            <div style="text-align: center; grid-column: 1/-1; padding: 40px; color: white;">
+                <div class="loader"></div>
+                <p>Loading products...</p>
+            </div>
+        </div>
+    </div>
+
+    <!-- Checkout Modal -->
+    <div class="modal" id="checkoutModal">
+        <div class="modal-content">
+            <div class="modal-header">Complete Your Purchase</div>
+            <div class="modal-body" id="checkoutDetails"></div>
+            <div class="modal-footer">
+                <button class="btn-confirm" id="confirmCheckoutBtn">Confirm</button>
+                <button class="btn-cancel" onclick="ModalService.closeCheckoutModal()">Cancel</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Toast Notifications -->
+    <div class="toast-container" id="toastContainer"></div>
+
+    <!-- Module Imports -->
+    <script src="js/config.js"></script>
+    <script src="js/utils.js"></script>
+    <script src="js/api-service.js"></script>
+    <script src="js/notification-service.js"></script>
+    <script src="js/modal-service.js"></script>
+    <script src="js/product-service.js"></script>
+    <script src="js/reservation-controller.js"></script>
+    <script src="js/checkout-controller.js"></script>
+    <script src="js/app.js"></script>
+</body>
+</html>

@@ -44,6 +44,13 @@ class ReservationRepository {
     });
   }
 
+  async getExpired(beforeTime = new Date()) {
+    return await Reservation.find({
+      status: 'RESERVED',
+      expiresAt: { $lt: beforeTime },
+    });
+  }
+
   async updateStatus(reservationId, status, confirmedAt = null) {
     const updateData = { status };
     if (confirmedAt) {

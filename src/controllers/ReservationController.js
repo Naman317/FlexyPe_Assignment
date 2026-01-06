@@ -54,7 +54,54 @@ class ReservationController {
   }
 
   /**
-   * GET /reservation/{reservationId}
+   * GET /reservation/status/:sku
+   * Get active reservations and availability for a product
+   */
+  async getReservationStatus(req, res) {
+    try {
+      const { sku } = req.params;
+
+      const skuValidation = validateSkU(sku);
+      if (!skuValidation.valid) {
+        return sendError(res, HTTP_STATUS.BAD_REQUEST, skuValidation.error);
+      }
+
+      const result = await ReservationService.getActiveReservationsBySku(sku);
+      return sendSuccess(res, HTTP_STATUS.SUCCESS, result.data);
+    } catch (error) {
+      logger.error('Error in getReservationStatus controller', { error: error.message });
+      return sendError(res, HTTP_STATUS.SERVER_ERROR, 'Internal server error');
+    }
+  }
+
+  /**
+   * POST /reservation/check-availability
+   * Check if a product can be reserved
+   */
+  async checkReservationAvailability(req, res) {
+    try {
+      const { sku, quantity } = req.body;
+
+      const skuValidation = validateSkU(sku);
+      if (!skuValidation.valid) {
+        return sendError(res, HTTP_STATUS.BAD_REQUEST, skuValidation.error);
+      }
+
+      const quantityValidation = validateQuantity(quantity);
+      if (!quantityValidation.valid) {
+        return sendError(res, HTTP_STATUS.BAD_REQUEST, quantityValidation.error);
+      }
+
+      const result = await ReservationService.canReserve(sku, quantity);
+      return sendSuccess(res, HTTP_STATUS.SUCCESS, result);
+    } catch (error) {
+      logger.error('Error in checkReservationAvailability controller', { error: error.message });
+      return sendError(res, HTTP_STATUS.SERVER_ERROR, 'Internal server error');
+    }
+  }
+
+  /**
+   * GET /reservation/:reservationId
    * Get reservation details
    */
   async getReservation(req, res) {

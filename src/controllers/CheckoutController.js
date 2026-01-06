@@ -6,6 +6,42 @@ const logger = require('../utils/logger');
 
 class CheckoutController {
   /**
+   * POST /checkout/create
+   * Create order from reservation
+   */
+  async createOrder(req, res) {
+    try {
+      const { userId, reservationId } = req.body;
+
+      // Validation
+      const userValidation = validateUserId(userId);
+      if (!userValidation.valid) {
+        return sendError(res, HTTP_STATUS.BAD_REQUEST, userValidation.error);
+      }
+
+      const reservationValidation = validateReservationId(reservationId);
+      if (!reservationValidation.valid) {
+        return sendError(res, HTTP_STATUS.BAD_REQUEST, reservationValidation.error);
+      }
+
+      const result = await CheckoutService.createOrder(reservationId, userId);
+      if (!result.success) {
+        return sendError(res, HTTP_STATUS.CONFLICT, result.error);
+      }
+
+      return sendSuccess(
+        res,
+        HTTP_STATUS.CREATED,
+        result.data,
+        'Order created successfully'
+      );
+    } catch (error) {
+      logger.error('Error in createOrder controller', { error: error.message });
+      return sendError(res, HTTP_STATUS.SERVER_ERROR, 'Internal server error');
+    }
+  }
+
+  /**
    * POST /checkout/confirm
    * Confirm checkout and finalize order
    */

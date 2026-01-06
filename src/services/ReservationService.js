@@ -170,7 +170,75 @@ class ReservationService {
     }
   }
 
-  //Clean expiry rservations
+  /**
+   * Get all active reservations for a product (SKU)
+   */
+  async getActiveReservationsBySku(sku) {
+    try {
+      const reservations = await ReservationRepository.getActiveBySku(sku);
+      const totalReservedQty = reservations.reduce((sum, res) => sum + res.quantity, 0);
+      
+      return {
+        success: true,
+        data: {
+          sku,
+          totalReservedQuantity: totalReservedQty,
+          reservationCount: reservations.length,
+          reservations: reservations.map(r => ({
+            reservationId: r.reservationId,
+            quantity: r.quantity,
+            expiresAt: r.expiresAt,
+            timeLeftSeconds: Math.max(0, Math.ceil((r.expiresAt - new Date()) / 1000)),
+          })),
+        },
+      };
+    } catch (error) {
+      logger.error('Error getting active reservations', {
+        sku,
+        error: error.message,
+      });
+      throw error;
+    }
+  }
+
+  /**
+   * Check if product can be reserved by current user
+   */
+  async canReserve(sku, requestedQuantity) {
+    try {
+      const inventory = await InventoryRepository.getBySkU(sku);
+      if (!inventory) {
+        return {
+          canReserve: false,
+          reason: 'Product not found',
+        };
+      }
+
+      if (inventory.availableQuantity < requestedQuantity) {
+        return {
+          canReserve: false,
+          reason: `Not enough stock. Available: ${inventory.availableQuantity}`,
+          availableQuantity: inventory.availableQuantity,
+        };
+      }
+
+      return {
+        canReserve: true,
+        availableQuantity: inventory.availableQuantity,
+      };
+    } catch (error) {
+      logger.error('Error checking if can reserve', {
+        sku,
+        requestedQuantity,
+        error: error.message,
+      });
+      throw error;
+    }
+  }
+
+  /**
+   * Clean up expired reservations
+   */
   async cleanupExpiredReservations() {
     try {
       const now = new Date();

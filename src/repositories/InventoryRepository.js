@@ -1,4 +1,5 @@
 const Inventory = require('../models/Inventory');
+const CacheService = require('../services/CacheService');
 
 class InventoryRepository {
  
@@ -19,47 +20,63 @@ class InventoryRepository {
 
   
   async updateQuantities(sku, availableQuantity, reservedQuantity) {
-    return await Inventory.findOneAndUpdate(
-      { sku: sku.toUpperCase() },
+    const skuUpper = sku.toUpperCase();
+    const result = await Inventory.findOneAndUpdate(
+      { sku: skuUpper },
       {
         availableQuantity,
         reservedQuantity,
       },
       { new: true }
     );
+    // Invalidate cache
+    await CacheService.delete(`inventory:${skuUpper}`);
+    return result;
   }
 
 
   async increaseReserved(sku, quantity) {
-    return await Inventory.findOneAndUpdate(
-      { sku: sku.toUpperCase() },
+    const skuUpper = sku.toUpperCase();
+    const result = await Inventory.findOneAndUpdate(
+      { sku: skuUpper },
       {
         $inc: { reservedQuantity: quantity, availableQuantity: -quantity },
       },
       { new: true }
     );
+    // Invalidate cache
+    await CacheService.delete(`inventory:${skuUpper}`);
+    return result;
   }
 
  
   async decreaseReserved(sku, quantity) {
-    return await Inventory.findOneAndUpdate(
-      { sku: sku.toUpperCase() },
+    const skuUpper = sku.toUpperCase();
+    const result = await Inventory.findOneAndUpdate(
+      { sku: skuUpper },
       {
         $inc: { reservedQuantity: -quantity, availableQuantity: quantity },
       },
       { new: true }
     );
+    // Invalidate cache
+    await CacheService.delete(`inventory:${skuUpper}`);
+    return result;
   }
 
 
   async confirmReservation(sku, quantity) {
-    return await Inventory.findOneAndUpdate(
-      { sku: sku.toUpperCase() },
+    const skuUpper = sku.toUpperCase();
+    const result = await Inventory.findOneAndUpdate(
+      { sku: skuUpper },
       {
         $inc: { reservedQuantity: -quantity },
       },
       { new: true }
     );
+    // Invalidate cache
+    await CacheService.delete(`inventory:${skuUpper}`);
+    return result;
   }
 }
 
